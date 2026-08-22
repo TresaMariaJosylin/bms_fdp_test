@@ -40,6 +40,17 @@ class MovieDatabaseTests(unittest.TestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             app.add_movie("Invalid", "Drama", 11, 2020)
 
+    def test_update_and_delete_movie(self):
+        app.add_movie("Old Title", "Drama", 7.0, 2000)
+        movie_id = app.fetch_movies()[0]["movie_id"]
+
+        app.update_movie(movie_id, "New Title", "Thriller", 8.5, 2005)
+        self.assertEqual(app.fetch_movies()[0]["movie_name"], "New Title")
+        self.assertEqual(app.fetch_movies()[0]["genre"], "Thriller")
+
+        app.delete_movie(movie_id)
+        self.assertEqual(app.fetch_movies(), [])
+
 
 if __name__ == "__main__":
     unittest.main()

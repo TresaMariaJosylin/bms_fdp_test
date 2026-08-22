@@ -11,6 +11,8 @@ Manual management of a personal movie collection makes it difficult to track mov
 - View the complete collection
 - Search by movie title or genre
 - Filter by genre and sort the collection
+- Edit existing movie details
+- Delete movies with confirmation
 - Display total movies, average rating, and represented genres
 - Identify the highest-rated movie or movies
 - Display genre counts, average ratings, and a bar chart

@@ -19,6 +19,8 @@ The tests verify database creation, valid record insertion, average rating, high
 | Required validation | Submit without a movie name or genre | Validation error appears | Screenshot of error |
 | View records | Open `View Movies` | Stored records appear in a table | Screenshot of movie collection |
 | Search and filter | Search a title and select a genre | Matching records are shown | Screenshot of filtered table |
+| Edit record | Open `Manage Movies`, change details, and save | Updated values appear in the collection | Screenshot of updated record |
+| Delete record | Select a movie, confirm deletion, and delete | Movie is removed from the collection | Screenshot of delete confirmation/result |
 | Summary calculation | Open `Dashboard` | Total and average rating are correct | Screenshot of dashboard metrics |
 | Highest rated | Add a high-rated movie | Highest-rated title appears | Screenshot of highest-rated section |
 | Genre summary | Add movies across genres | Counts and chart update correctly | Screenshot of chart and table |

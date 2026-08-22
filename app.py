@@ -77,6 +77,23 @@ def add_movie(movie_name, genre, rating, release_year):
         )
 
 
+def update_movie(movie_id, movie_name, genre, rating, release_year):
+    with get_connection() as connection:
+        connection.execute(
+            """
+            UPDATE movies
+            SET movie_name = ?, genre = ?, rating = ?, release_year = ?
+            WHERE movie_id = ?
+            """,
+            (movie_name.strip(), genre, rating, release_year, movie_id),
+        )
+
+
+def delete_movie(movie_id):
+    with get_connection() as connection:
+        connection.execute("DELETE FROM movies WHERE movie_id = ?", (movie_id,))
+
+
 def fetch_movies():
     with get_connection() as connection:
         return connection.execute(
@@ -129,7 +146,7 @@ with st.sidebar:
     st.markdown("## 🎬 Cinevault")
     st.caption("Your personal screening room")
     st.divider()
-    page = st.radio("Choose a view", ["Dashboard", "Add Movie", "View Movies"], label_visibility="collapsed")
+    page = st.radio("Choose a view", ["Dashboard", "Add Movie", "View Movies", "Manage Movies"], label_visibility="collapsed")
     sidebar_movies = fetch_movies()
     st.divider()
     st.caption("COLLECTION PULSE")
@@ -179,6 +196,51 @@ elif page == "View Movies":
         st.dataframe(movie_frame, width="stretch", hide_index=True, column_config={"rating": st.column_config.NumberColumn("Rating", format="%.1f / 10")})
     else:
         st.info("No movies have been added yet.")
+
+elif page == "Manage Movies":
+    st.markdown('<div class="eyebrow">Keep the archive precise</div>', unsafe_allow_html=True)
+    st.header("Manage movies")
+    movies = fetch_movies()
+    if not movies:
+        st.info("Add a movie before managing your collection.")
+    else:
+        movie_labels = {
+            f"{movie['movie_name']} ({movie['release_year']}) · {movie['rating']:.1f}/10": movie["movie_id"]
+            for movie in movies
+        }
+        selected_label = st.selectbox("Select a movie", list(movie_labels))
+        selected_id = movie_labels[selected_label]
+        selected_movie = next(movie for movie in movies if movie["movie_id"] == selected_id)
+
+        edit_col, delete_col = st.columns([1.6, 1])
+        with edit_col:
+            st.subheader("Edit details")
+            with st.form("edit_movie_form"):
+                edited_name = st.text_input("Movie Name", value=selected_movie["movie_name"])
+                existing_genres = GENRES + [movie["genre"] for movie in movies if movie["genre"] not in GENRES]
+                genre_choice = st.selectbox("Genre", existing_genres + ["Other"], index=existing_genres.index(selected_movie["genre"]) if selected_movie["genre"] in existing_genres else len(existing_genres))
+                custom_genre = st.text_input("Custom Genre", value=selected_movie["genre"] if selected_movie["genre"] not in existing_genres else "") if genre_choice == "Other" else ""
+                edited_rating = st.number_input("Rating", min_value=0.0, max_value=10.0, value=float(selected_movie["rating"]), step=0.1)
+                edited_year = st.number_input("Release Year", min_value=1888, max_value=2100, value=int(selected_movie["release_year"]), step=1)
+                update_submitted = st.form_submit_button("Save Changes", type="primary", width="stretch")
+
+            if update_submitted:
+                updated_genre = custom_genre.strip() if genre_choice == "Other" else genre_choice
+                if not edited_name.strip() or not updated_genre:
+                    st.error("Movie name and genre are required.")
+                else:
+                    update_movie(selected_id, edited_name, updated_genre, edited_rating, edited_year)
+                    st.success(f'"{edited_name.strip()}" was updated successfully.')
+                    st.rerun()
+
+        with delete_col:
+            st.subheader("Remove movie")
+            st.warning("Deleting a movie cannot be undone.")
+            confirm_delete = st.checkbox("I want to permanently delete this movie")
+            if st.button("Delete Movie", type="secondary", disabled=not confirm_delete, width="stretch"):
+                delete_movie(selected_id)
+                st.success("Movie deleted successfully.")
+                st.rerun()
 
 else:
     st.markdown('<div class="hero"><div class="eyebrow">Collection dashboard</div><h2>Tonight, what deserves a rewatch?</h2><p>See the shape of your collection at a glance.</p></div>', unsafe_allow_html=True)
