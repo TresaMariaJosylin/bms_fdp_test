@@ -3,6 +3,7 @@
 ## Database
 
 The application uses a local SQLite database named `movies.db` in the project directory.
+The database is created automatically when `app.py` starts. SQLite connections use parameterized queries and are committed on success, rolled back on errors, and closed after use.
 
 ## Table: `movies`
 
@@ -32,23 +33,37 @@ CREATE TABLE IF NOT EXISTS movies (
 
 ```sql
 -- View movies
-SELECT movie_id, movie_name, genre, rating, release_year
+SELECT movie_id, movie_name, genre, rating, release_year, status, is_favorite
 FROM movies
 ORDER BY release_year DESC, movie_name ASC;
 
--- Average rating
-SELECT AVG(rating) AS average_rating FROM movies;
+-- Average rating for active movies
+SELECT AVG(rating) AS average_rating
+FROM movies
+WHERE status = 'Active';
 
--- Highest-rated movie or movies
+-- Highest-rated active movie or movies
 SELECT movie_name, genre, rating, release_year
 FROM movies
-WHERE rating = (SELECT MAX(rating) FROM movies);
+WHERE status = 'Active'
+    AND rating = (SELECT MAX(rating) FROM movies WHERE status = 'Active');
 
--- Genre-wise summary
+-- Genre-wise summary for active movies
 SELECT genre, COUNT(*) AS movie_count, AVG(rating) AS average_rating
 FROM movies
+WHERE status = 'Active'
 GROUP BY genre
 ORDER BY movie_count DESC, genre ASC;
+
+-- Deactivate a movie without deleting its record
+UPDATE movies SET status = 'Inactive' WHERE movie_id = ?;
+
+-- Restore a movie
+UPDATE movies SET status = 'Active' WHERE movie_id = ?;
 ```
 
-The application will create the database and table automatically at startup, so a separate database installation is not required.
+## Migration
+
+When an older database is opened, the application checks the existing columns using `PRAGMA table_info(movies)`. If needed, it adds `status` with a default of `Active` and `is_favorite` with a default of `0`. Existing records are therefore preserved and remain active by default.
+
+Inactive movies remain available in the View Movies and Manage Movies pages. They are excluded from average rating, highest-rated movie, genre summary, and movie-picker results until restored.
