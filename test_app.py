@@ -49,7 +49,11 @@ class MovieDatabaseTests(unittest.TestCase):
         self.assertEqual(app.fetch_movies()[0]["genre"], "Thriller")
 
         app.delete_movie(movie_id)
-        self.assertEqual(app.fetch_movies(), [])
+        self.assertEqual(app.fetch_movies()[0]["status"], "Inactive")
+        self.assertIsNone(app.fetch_average_rating())
+
+        app.restore_movie(movie_id)
+        self.assertEqual(app.fetch_movies()[0]["status"], "Active")
 
     def test_login_credentials(self):
         self.assertTrue(app.authenticate("admin", "movie123"))

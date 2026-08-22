@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS movies (
     movie_name TEXT NOT NULL,
     genre TEXT NOT NULL,
     rating REAL NOT NULL CHECK (rating >= 0 AND rating <= 10),
-    release_year INTEGER NOT NULL CHECK (release_year >= 1888)
+    release_year INTEGER NOT NULL CHECK (release_year >= 1888),
+    status TEXT NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive'))
 );
 ```
 
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS movies (
 | `genre` | `TEXT` | Required |
 | `rating` | `REAL` | Required, from 0 to 10 |
 | `release_year` | `INTEGER` | Required, 1888 or later |
+| `status` | `TEXT` | Required, `Active` or `Inactive`; defaults to `Active` |
 
 ## Feature Queries
 

@@ -92,10 +92,14 @@ def initialize_database():
                 movie_name TEXT NOT NULL,
                 genre TEXT NOT NULL,
                 rating REAL NOT NULL CHECK (rating >= 0 AND rating <= 10),
-                release_year INTEGER NOT NULL CHECK (release_year >= 1888)
+                release_year INTEGER NOT NULL CHECK (release_year >= 1888),
+                status TEXT NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive'))
             )
             """
         )
+        columns = {column[1] for column in connection.execute("PRAGMA table_info(movies)")}
+        if "status" not in columns:
+            connection.execute("ALTER TABLE movies ADD COLUMN status TEXT NOT NULL DEFAULT 'Active'")
 
 
 def add_movie(movie_name, genre, rating, release_year):
@@ -123,14 +127,25 @@ def update_movie(movie_id, movie_name, genre, rating, release_year):
 
 def delete_movie(movie_id):
     with get_connection() as connection:
-        connection.execute("DELETE FROM movies WHERE movie_id = ?", (movie_id,))
+        connection.execute(
+            "UPDATE movies SET status = 'Inactive' WHERE movie_id = ?",
+            (movie_id,),
+        )
+
+
+def restore_movie(movie_id):
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE movies SET status = 'Active' WHERE movie_id = ?",
+            (movie_id,),
+        )
 
 
 def fetch_movies():
     with get_connection() as connection:
         return connection.execute(
             """
-            SELECT movie_id, movie_name, genre, rating, release_year
+            SELECT movie_id, movie_name, genre, rating, release_year, status
             FROM movies
             ORDER BY release_year DESC, movie_name ASC
             """
@@ -139,7 +154,7 @@ def fetch_movies():
 
 def fetch_average_rating():
     with get_connection() as connection:
-        result = connection.execute("SELECT AVG(rating) AS average_rating FROM movies").fetchone()
+        result = connection.execute("SELECT AVG(rating) AS average_rating FROM movies WHERE status = 'Active'").fetchone()
         return result["average_rating"]
 
 
@@ -149,7 +164,7 @@ def fetch_highest_rated():
             """
             SELECT movie_name, genre, rating, release_year
             FROM movies
-            WHERE rating = (SELECT MAX(rating) FROM movies)
+            WHERE status = 'Active' AND rating = (SELECT MAX(rating) FROM movies WHERE status = 'Active')
             ORDER BY movie_name ASC
             """
         ).fetchall()
@@ -161,6 +176,7 @@ def fetch_genre_summary():
             """
             SELECT genre, COUNT(*) AS movie_count, ROUND(AVG(rating), 2) AS average_rating
             FROM movies
+            WHERE status = 'Active'
             GROUP BY genre
             ORDER BY movie_count DESC, genre ASC
             """
@@ -236,7 +252,7 @@ elif page == "View Movies":
             movie_frame = movie_frame.sort_values("movie_name")
         st.caption(f"Showing {len(movie_frame)} of {len(movies)} titles")
         st.download_button("Download CSV", movie_frame.to_csv(index=False), "movie-collection.csv", "text/csv", width="stretch")
-        st.dataframe(movie_frame, width="stretch", hide_index=True, column_config={"rating": st.column_config.NumberColumn("Rating", format="%.1f / 10")})
+        st.dataframe(movie_frame, width="stretch", hide_index=True, column_config={"rating": st.column_config.NumberColumn("Rating", format="%.1f / 10"), "status": st.column_config.TextColumn("Status")})
     else:
         st.info("No movies have been added yet.")
 
@@ -277,13 +293,21 @@ elif page == "Manage Movies":
                     st.rerun()
 
         with delete_col:
-            st.subheader("Remove movie")
-            st.warning("Deleting a movie cannot be undone.")
-            confirm_delete = st.checkbox("I want to permanently delete this movie")
-            if st.button("Delete Movie", type="secondary", disabled=not confirm_delete, width="stretch"):
-                delete_movie(selected_id)
-                st.success("Movie deleted successfully.")
-                st.rerun()
+            if selected_movie["status"] == "Active":
+                st.subheader("Deactivate movie")
+                st.warning("This keeps the record but marks it inactive.")
+                confirm_delete = st.checkbox("Mark this movie as inactive")
+                if st.button("Deactivate Movie", type="secondary", disabled=not confirm_delete, width="stretch"):
+                    delete_movie(selected_id)
+                    st.success("Movie marked as inactive.")
+                    st.rerun()
+            else:
+                st.subheader("Restore movie")
+                st.info("This movie is currently inactive.")
+                if st.button("Restore Movie", type="primary", width="stretch"):
+                    restore_movie(selected_id)
+                    st.success("Movie restored successfully.")
+                    st.rerun()
 
 else:
     st.markdown('<div class="hero"><div class="eyebrow">Collection dashboard</div><h2>Tonight, what deserves a rewatch?</h2><p>See the shape of your collection at a glance.</p></div>', unsafe_allow_html=True)
