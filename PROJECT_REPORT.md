@@ -15,6 +15,9 @@ Manual management of a personal movie collection makes it difficult to track mov
 - Delete movies with confirmation
 - Protect the collection with session-based login and logout
 - Export the visible collection as CSV
+- Mark favorites and filter the collection to favorite movies
+- Pick a random active movie for tonight
+- View the collection by release-year trend
 - Display total movies, average rating, and represented genres
 - Identify the highest-rated movie or movies
 - Display genre counts, average ratings, and a bar chart

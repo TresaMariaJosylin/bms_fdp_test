@@ -1,5 +1,6 @@
 import hmac
 import os
+import random
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
@@ -93,35 +94,38 @@ def initialize_database():
                 genre TEXT NOT NULL,
                 rating REAL NOT NULL CHECK (rating >= 0 AND rating <= 10),
                 release_year INTEGER NOT NULL CHECK (release_year >= 1888),
-                status TEXT NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive'))
+                status TEXT NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive')),
+                is_favorite INTEGER NOT NULL DEFAULT 0 CHECK (is_favorite IN (0, 1))
             )
             """
         )
         columns = {column[1] for column in connection.execute("PRAGMA table_info(movies)")}
         if "status" not in columns:
             connection.execute("ALTER TABLE movies ADD COLUMN status TEXT NOT NULL DEFAULT 'Active'")
+        if "is_favorite" not in columns:
+            connection.execute("ALTER TABLE movies ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0")
 
 
-def add_movie(movie_name, genre, rating, release_year):
+def add_movie(movie_name, genre, rating, release_year, is_favorite=False):
     with get_connection() as connection:
         connection.execute(
             """
-            INSERT INTO movies (movie_name, genre, rating, release_year)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO movies (movie_name, genre, rating, release_year, is_favorite)
+            VALUES (?, ?, ?, ?, ?)
             """,
-            (movie_name.strip(), genre, rating, release_year),
+            (movie_name.strip(), genre, rating, release_year, int(is_favorite)),
         )
 
 
-def update_movie(movie_id, movie_name, genre, rating, release_year):
+def update_movie(movie_id, movie_name, genre, rating, release_year, is_favorite=False):
     with get_connection() as connection:
         connection.execute(
             """
             UPDATE movies
-            SET movie_name = ?, genre = ?, rating = ?, release_year = ?
+            SET movie_name = ?, genre = ?, rating = ?, release_year = ?, is_favorite = ?
             WHERE movie_id = ?
             """,
-            (movie_name.strip(), genre, rating, release_year, movie_id),
+            (movie_name.strip(), genre, rating, release_year, int(is_favorite), movie_id),
         )
 
 
@@ -145,7 +149,7 @@ def fetch_movies():
     with get_connection() as connection:
         return connection.execute(
             """
-            SELECT movie_id, movie_name, genre, rating, release_year, status
+            SELECT movie_id, movie_name, genre, rating, release_year, status, is_favorite
             FROM movies
             ORDER BY release_year DESC, movie_name ASC
             """
@@ -221,6 +225,7 @@ if page == "Add Movie":
         custom_genre = st.text_input("Custom Genre", placeholder="Optional") if genre_choice == "Other" else ""
         rating = st.number_input("Rating", min_value=0.0, max_value=10.0, value=5.0, step=0.1, help="Choose a rating from 0 to 10.")
         release_year = st.number_input("Release Year", min_value=1888, max_value=2100, value=2024, step=1)
+        is_favorite = st.checkbox("Add to favorites")
         submitted = st.form_submit_button("Add Movie to Collection", type="primary", width="stretch")
 
     if submitted:
@@ -228,7 +233,7 @@ if page == "Add Movie":
         if not movie_name.strip() or not genre:
             st.error("Movie name and genre are required.")
         else:
-            add_movie(movie_name, genre, rating, release_year)
+            add_movie(movie_name, genre, rating, release_year, is_favorite)
             st.success(f'"{movie_name.strip()}" was added successfully.')
 
 elif page == "View Movies":
@@ -240,19 +245,22 @@ elif page == "View Movies":
         filter_col, sort_col = st.columns(2)
         genre_filter = filter_col.selectbox("Filter by genre", ["All genres"] + sorted({movie["genre"] for movie in movies}))
         sort_order = sort_col.selectbox("Sort collection", ["Newest first", "Highest rated", "Title A-Z"])
+        favorites_only = st.checkbox("Show favorites only")
         movie_frame = pd.DataFrame([dict(movie) for movie in movies])
         if search:
             searchable = movie_frame["movie_name"].str.contains(search, case=False, na=False) | movie_frame["genre"].str.contains(search, case=False, na=False)
             movie_frame = movie_frame[searchable]
         if genre_filter != "All genres":
             movie_frame = movie_frame[movie_frame["genre"] == genre_filter]
+        if favorites_only:
+            movie_frame = movie_frame[movie_frame["is_favorite"] == 1]
         if sort_order == "Highest rated":
             movie_frame = movie_frame.sort_values(["rating", "movie_name"], ascending=[False, True])
         elif sort_order == "Title A-Z":
             movie_frame = movie_frame.sort_values("movie_name")
         st.caption(f"Showing {len(movie_frame)} of {len(movies)} titles")
         st.download_button("Download CSV", movie_frame.to_csv(index=False), "movie-collection.csv", "text/csv", width="stretch")
-        st.dataframe(movie_frame, width="stretch", hide_index=True, column_config={"rating": st.column_config.NumberColumn("Rating", format="%.1f / 10"), "status": st.column_config.TextColumn("Status")})
+        st.dataframe(movie_frame, width="stretch", hide_index=True, column_config={"rating": st.column_config.NumberColumn("Rating", format="%.1f / 10"), "status": st.column_config.TextColumn("Status"), "is_favorite": st.column_config.CheckboxColumn("Favorite")})
     else:
         st.info("No movies have been added yet.")
 
@@ -281,6 +289,7 @@ elif page == "Manage Movies":
                 custom_genre = st.text_input("Custom Genre", value=selected_movie["genre"] if selected_movie["genre"] not in existing_genres else "") if genre_choice == "Other" else ""
                 edited_rating = st.number_input("Rating", min_value=0.0, max_value=10.0, value=float(selected_movie["rating"]), step=0.1)
                 edited_year = st.number_input("Release Year", min_value=1888, max_value=2100, value=int(selected_movie["release_year"]), step=1)
+                edited_favorite = st.checkbox("Favorite", value=bool(selected_movie["is_favorite"]))
                 update_submitted = st.form_submit_button("Save Changes", type="primary", width="stretch")
 
             if update_submitted:
@@ -288,7 +297,7 @@ elif page == "Manage Movies":
                 if not edited_name.strip() or not updated_genre:
                     st.error("Movie name and genre are required.")
                 else:
-                    update_movie(selected_id, edited_name, updated_genre, edited_rating, edited_year)
+                    update_movie(selected_id, edited_name, updated_genre, edited_rating, edited_year, edited_favorite)
                     st.success(f'"{edited_name.strip()}" was updated successfully.')
                     st.rerun()
 
@@ -319,7 +328,13 @@ else:
     metric_one, metric_two, metric_three = st.columns(3)
     metric_one.metric("Total Movies", len(movies))
     metric_two.metric("Average Rating", f"{average_rating:.2f}" if average_rating is not None else "-")
-    metric_three.metric("Genres Represented", len(summary))
+    metric_three.metric("Favorites", sum(movie["is_favorite"] for movie in movies if movie["status"] == "Active"))
+
+    active_movies = [movie for movie in movies if movie["status"] == "Active"]
+    if active_movies:
+        if st.button("Pick a movie for tonight", type="primary"):
+            pick = random.choice(active_movies)
+            st.success(f"Tonight's pick: {pick['movie_name']} · {pick['genre']} · {pick['rating']:.1f}/10")
 
     st.subheader("Highest Rated Movie")
     if highest_rated:
@@ -335,5 +350,8 @@ else:
             st.bar_chart(summary_frame.set_index("genre")["movie_count"], color="#087f8c")
         with table_col:
             st.dataframe(summary_frame, width="stretch", hide_index=True)
+        year_frame = pd.DataFrame([dict(movie) for movie in active_movies])
+        st.subheader("Collection by Release Year")
+        st.line_chart(year_frame.groupby("release_year").size(), color="#ef8354")
     else:
         st.info("Add movies to see genre statistics.")

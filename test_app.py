@@ -59,6 +59,13 @@ class MovieDatabaseTests(unittest.TestCase):
         self.assertTrue(app.authenticate("admin", "movie123"))
         self.assertFalse(app.authenticate("admin", "wrong-password"))
 
+    def test_favorite_movie(self):
+        app.add_movie("Favorite Film", "Drama", 9.2, 2022, True)
+
+        movie = app.fetch_movies()[0]
+
+        self.assertEqual(movie["is_favorite"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

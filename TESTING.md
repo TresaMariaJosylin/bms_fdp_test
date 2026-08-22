@@ -8,7 +8,7 @@ Run the database tests from the activated virtual environment:
 python -m unittest test_app.py -v
 ```
 
-The tests verify database creation, valid record insertion, average rating, highest-rated movie, genre summary, and invalid rating rejection. Tests use a temporary database and do not modify the project collection.
+The tests verify database creation, valid record insertion, average rating, highest-rated movie, genre summary, invalid rating rejection, favorites, update/delete behavior, restore behavior, and login credentials. Tests use a temporary database and do not modify the project collection.
 
 ## Login
 
@@ -28,6 +28,8 @@ The default local credentials are `admin` / `movie123`. For a different account,
 | Edit record | Open `Manage Movies`, change details, and save | Updated values appear in the collection | Screenshot of updated record |
 | Delete record | Select a movie, confirm deletion, and delete | Movie is removed from the collection | Screenshot of delete confirmation/result |
 | Export records | Filter the collection and select `Download CSV` | A CSV file downloads with the visible records | Screenshot of export control |
+| Favorite movie | Mark a movie as a favorite | Favorite flag and favorites filter update | Screenshot of favorite collection |
+| Movie picker | Select `Pick a movie for tonight` | An active movie recommendation appears | Screenshot of recommendation |
 | Summary calculation | Open `Dashboard` | Total and average rating are correct | Screenshot of dashboard metrics |
 | Highest rated | Add a high-rated movie | Highest-rated title appears | Screenshot of highest-rated section |
 | Genre summary | Add movies across genres | Counts and chart update correctly | Screenshot of chart and table |
