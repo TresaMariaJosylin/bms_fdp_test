@@ -8,7 +8,7 @@ Project workflow:
 2. Database design: [DATABASE_DESIGN.md](DATABASE_DESIGN.md)
 3. Application development
 4. Testing and evidence: [TESTING.md](TESTING.md)
-5. Documentation: [PROMPTS_USED.md](PROMPTS_USED.md)
+5. Documentation: [PROJECT_REPORT.md](PROJECT_REPORT.md) and [PROMPTS_USED.md](PROMPTS_USED.md)
 6. Git operations
 
 ## Run Locally
