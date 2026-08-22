@@ -7,6 +7,23 @@ Project workflow:
 1. Requirements analysis: [REQUIREMENTS.md](REQUIREMENTS.md)
 2. Database design: [DATABASE_DESIGN.md](DATABASE_DESIGN.md)
 3. Application development
-4. Testing and evidence
-5. Documentation
+4. Testing and evidence: [TESTING.md](TESTING.md)
+5. Documentation: [PROMPTS_USED.md](PROMPTS_USED.md)
 6. Git operations
+
+## Run Locally
+
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m streamlit run app.py
+```
+
+The application opens at `http://localhost:8501` and creates `movies.db` automatically.
+
+Run automated tests with:
+
+```powershell
+python -m unittest test_app.py -v
+```
