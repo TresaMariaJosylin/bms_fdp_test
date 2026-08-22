@@ -10,17 +10,24 @@ python -m unittest test_app.py -v
 
 The tests verify database creation, valid record insertion, average rating, highest-rated movie, genre summary, and invalid rating rejection. Tests use a temporary database and do not modify the project collection.
 
+## Login
+
+The default local credentials are `admin` / `movie123`. For a different account, set `MOVIE_APP_USERNAME` and `MOVIE_APP_PASSWORD` before starting Streamlit.
+
 ## Manual Testing Checklist
 
 | Test | Action | Expected result | Evidence |
 | --- | --- | --- | --- |
 | Database creation | Start the Streamlit app | `movies.db` and `movies` table are created | Screenshot of SQLite database/table |
+| Login | Enter valid credentials | Dashboard opens | Screenshot of dashboard after sign in |
+| Login validation | Enter an incorrect password | Error message appears and access is denied | Screenshot of login error |
 | Add record | Submit a valid movie | Success message appears and record is stored | Screenshot of success message |
 | Required validation | Submit without a movie name or genre | Validation error appears | Screenshot of error |
 | View records | Open `View Movies` | Stored records appear in a table | Screenshot of movie collection |
 | Search and filter | Search a title and select a genre | Matching records are shown | Screenshot of filtered table |
 | Edit record | Open `Manage Movies`, change details, and save | Updated values appear in the collection | Screenshot of updated record |
 | Delete record | Select a movie, confirm deletion, and delete | Movie is removed from the collection | Screenshot of delete confirmation/result |
+| Export records | Filter the collection and select `Download CSV` | A CSV file downloads with the visible records | Screenshot of export control |
 | Summary calculation | Open `Dashboard` | Total and average rating are correct | Screenshot of dashboard metrics |
 | Highest rated | Add a high-rated movie | Highest-rated title appears | Screenshot of highest-rated section |
 | Genre summary | Add movies across genres | Counts and chart update correctly | Screenshot of chart and table |

@@ -13,6 +13,8 @@ Manual management of a personal movie collection makes it difficult to track mov
 - Filter by genre and sort the collection
 - Edit existing movie details
 - Delete movies with confirmation
+- Protect the collection with session-based login and logout
+- Export the visible collection as CSV
 - Display total movies, average rating, and represented genres
 - Identify the highest-rated movie or movies
 - Display genre counts, average ratings, and a bar chart

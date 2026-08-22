@@ -22,6 +22,8 @@ python -m streamlit run app.py
 
 The application opens at `http://localhost:8501` and creates `movies.db` automatically.
 
+Default local login: username `admin`, password `movie123`. Set `MOVIE_APP_USERNAME` and `MOVIE_APP_PASSWORD` to use custom credentials.
+
 Run automated tests with:
 
 ```powershell

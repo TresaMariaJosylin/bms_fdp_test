@@ -51,6 +51,10 @@ class MovieDatabaseTests(unittest.TestCase):
         app.delete_movie(movie_id)
         self.assertEqual(app.fetch_movies(), [])
 
+    def test_login_credentials(self):
+        self.assertTrue(app.authenticate("admin", "movie123"))
+        self.assertFalse(app.authenticate("admin", "wrong-password"))
+
 
 if __name__ == "__main__":
     unittest.main()

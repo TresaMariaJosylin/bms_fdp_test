@@ -1,3 +1,5 @@
+import hmac
+import os
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
@@ -8,6 +10,32 @@ import streamlit as st
 
 DATABASE_PATH = Path(__file__).with_name("movies.db")
 GENRES = ["Action", "Comedy", "Drama", "Thriller", "Science Fiction"]
+DEFAULT_USERNAME = "admin"
+DEFAULT_PASSWORD = "movie123"
+
+
+def authenticate(username, password):
+    expected_username = os.getenv("MOVIE_APP_USERNAME", DEFAULT_USERNAME)
+    expected_password = os.getenv("MOVIE_APP_PASSWORD", DEFAULT_PASSWORD)
+    return hmac.compare_digest(username, expected_username) and hmac.compare_digest(password, expected_password)
+
+
+def show_login_page():
+    st.markdown(
+        '<div class="login-panel"><div class="eyebrow">Private screening room</div><h2>Welcome back</h2><p>Sign in to manage your personal movie collection.</p></div>',
+        unsafe_allow_html=True,
+    )
+    with st.form("login_form"):
+        username = st.text_input("Username", placeholder="Enter your username")
+        password = st.text_input("Password", type="password", placeholder="Enter your password")
+        submitted = st.form_submit_button("Sign in", type="primary", width="stretch")
+
+    if submitted:
+        if authenticate(username, password):
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("Incorrect username or password.")
 
 
 def apply_styles():
@@ -30,6 +58,10 @@ def apply_styles():
         .hero h2 { color: #f4f5ef; margin: 0; font-size: 1.8rem; }
         .hero p { color: #c6d8d5; margin: 0.35rem 0 0; }
         .eyebrow { color: #f2b880; font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+        .login-panel { max-width: 560px; margin: 8vh auto 1.5rem; background: #173b44; border-radius: 8px; padding: 2rem; color: #f4f5ef; }
+        .login-panel h2 { color: #f4f5ef; margin: .2rem 0; font-size: 2.2rem; }
+        .login-panel p { color: #c6d8d5; margin: 0; }
+        .login-panel + div { max-width: 560px; margin: 0 auto; }
         div.stButton > button, div[data-testid='stFormSubmitButton'] button { border-radius: 6px; font-weight: 700; }
         </style>
         """,
@@ -139,6 +171,13 @@ st.set_page_config(page_title="Movie Collection Manager", page_icon="🎬", layo
 initialize_database()
 apply_styles()
 
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    show_login_page()
+    st.stop()
+
 st.title("Movie Collection Manager")
 st.caption("A considered home for the films worth remembering.")
 
@@ -147,6 +186,9 @@ with st.sidebar:
     st.caption("Your personal screening room")
     st.divider()
     page = st.radio("Choose a view", ["Dashboard", "Add Movie", "View Movies", "Manage Movies"], label_visibility="collapsed")
+    if st.button("Sign out", width="stretch"):
+        st.session_state.authenticated = False
+        st.rerun()
     sidebar_movies = fetch_movies()
     st.divider()
     st.caption("COLLECTION PULSE")
@@ -193,6 +235,7 @@ elif page == "View Movies":
         elif sort_order == "Title A-Z":
             movie_frame = movie_frame.sort_values("movie_name")
         st.caption(f"Showing {len(movie_frame)} of {len(movies)} titles")
+        st.download_button("Download CSV", movie_frame.to_csv(index=False), "movie-collection.csv", "text/csv", width="stretch")
         st.dataframe(movie_frame, width="stretch", hide_index=True, column_config={"rating": st.column_config.NumberColumn("Rating", format="%.1f / 10")})
     else:
         st.info("No movies have been added yet.")
